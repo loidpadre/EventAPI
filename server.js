@@ -38,7 +38,34 @@ app.post("/event", async (req, res) =>{
 
 // rota para buscar eventos
 
+app.get('/getEvent', async (req, res) =>{
+    try {
+        const result = await Event.find()
 
+        if(!result){
+            res.json({message:'Nenhum evento encontrado'})
+        }
+        res.json(result)
+        
+    } catch (error) {
+        res.status(500).json({message:'Problemas ao consultar o banco de dados'})
+    }
+})
+ // criei uma rota para deletar evento usando o id como parametro
+app.delete('/delEvent:id', async (req, res) =>{
+    const id = req.query.params
+   
+   try {
+    const eventDeleted = await Event.findOneAndDelete({ id: id})
+    if(!eventDeleted){
+        res.json({message: 'Evento não encontrado, verifique o id do evento'})
+    }
+    res.json({message:'O evento ' + eventDeleted.name + ' foi deletado com sucesso'})
+   } catch (error) {
+    res.status(503).json({message: 'Problemas ao deletar no banco de dados', error})
+   }
+   
+})
 
 
 
