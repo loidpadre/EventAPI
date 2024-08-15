@@ -9,8 +9,9 @@ app.use(cors())
 app.use(express.json())
 
 
-app.get("/", (req, res) =>{
-    res.json("Ola mundo")
+app.get("/:mambo", (req, res) =>{
+   // res.json("Ola mundo")
+    res.json(req.query.params)
 })
 
 // criando a rota de eventos - POST
@@ -27,18 +28,46 @@ app.post("/event", async (req, res) =>{
             organizer
         }
         const eventCreated = await Event.create(event)
-        res.status(201).json("evento criado com sucesso", eventCreated)
+        res.status(201).json({ message: "Evento criado com sucesso", event: eventCreated });
         
     } catch (error) {
         console.log("erro ao criar evento", error)
-        res.status(500).json({message: "erro ao criar evento", erro: error})
+        res.status(501).json({message: "erro ao criar evento", erro: error})
     }
 })
 
 
 // rota para buscar eventos
 
+app.get('/getEvent', async (req, res) =>{
+    try {
+        const result = await Event.find()
 
+        if(!result){
+            res.json({message:'Nenhum evento encontrado'})
+        }
+        res.json(result)
+        
+    } catch (error) {
+        res.status(500).json({message:'Problemas ao consultar o banco de dados'})
+    }
+})
+ // criei uma rota para deletar evento usando o id como parametro
+app.delete('/delEvent:id', async (req, res) =>{
+    const id = req.query.params
+   
+   try {
+    const eventDeleted = await Event.findOneAndDelete({ id: id})
+    if(!eventDeleted){
+        res.json({message: 'Evento não encontrado, verifique o id do evento'})
+    }
+    res.json({message:'O evento ' + eventDeleted.name + ' foi deletado com sucesso'})
+   } catch (error) {
+    res.status(503).json({message: 'Problemas ao deletar no banco de dados', error})
+   }
+   
+})
+  
 
 
 
