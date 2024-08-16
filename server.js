@@ -67,7 +67,26 @@ app.delete('/delEvent:id', async (req, res) =>{
    
 })
 
+// rota para atualizar, precisa ser melhorada, só altera um registro, creio que seja o findOneAndUpdate que estou a usar
 
+app.put('/putEvent:id', async (req, res) =>{
+    const editId = req.query.params
+
+    const {name, description, date, location, organizer} = req.body
+    try {
+        const EditEvent = await Event.findOneAndUpdate({id: editId}, {
+        name:name, 
+        description:description, 
+        date:date, 
+        location:location, 
+        organizer:organizer})
+    
+        res.status(202).json({message: 'Atualizamos o evento com Id ' + EditEvent.id})
+
+    } catch (error) {
+        res.status(502).json(error)
+    }
+})
 
 
 
