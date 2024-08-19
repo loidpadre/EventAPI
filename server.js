@@ -45,48 +45,60 @@ app.get('/getEvent', async (req, res) =>{
         if(!result){
             res.json({message:'Nenhum evento encontrado'})
         }
-        res.json(result)
+        // adicionando o status 200 ao entregar os dados
+        res.status(200).json(result)
         
     } catch (error) {
-        res.status(500).json({message:'Problemas ao consultar o banco de dados'})
+        res.status(500).json({message:'Problemas ao consultar o banco de dados', erro: error})
     }
 })
+
+
  // criei uma rota para deletar evento usando o id como parametro
-app.delete('/delEvent:id', async (req, res) =>{
-    const id = req.query.params
-   
+app.delete('/delEvent/:id', async (req, res) =>{
+    // ao pegar o ID, é conveniete que vc pegue diretamente da rota: req.params.id
+    const id = req.params.id
    try {
     const eventDeleted = await Event.findOneAndDelete({ id: id})
     if(!eventDeleted){
-        res.json({message: 'Evento não encontrado, verifique o id do evento'})
+        res.status(404).json({message: 'Evento não encontrado, verifique o id do evento'})
     }
-    res.json({message:'O evento ' + eventDeleted.name + ' foi deletado com sucesso'})
+    res.status(200).json({message:'Evento deletado com sucesso', event: eventDeleted})
    } catch (error) {
-    res.status(503).json({message: 'Problemas ao deletar no banco de dados', error})
+    res.status(503).json({message: 'Problemas ao deletar no banco de dados', erro: error})
    }
    
 })
 
 // rota para atualizar, precisa ser melhorada, só altera um registro, creio que seja o findOneAndUpdate que estou a usar
 
-app.put('/putEvent:id', async (req, res) =>{
-    const editId = req.query.params
+app.put('/putEvent/:id', async (req, res) => {
+    const eventId = req.params.id;
+    const { name, description, date, location, organizer } = req.body;
 
-    const {name, description, date, location, organizer} = req.body
     try {
-        const EditEvent = await Event.findOneAndUpdate({id: editId}, {
-        name:name, 
-        description:description, 
-        date:date, 
-        location:location, 
-        organizer:organizer})
-    
-        res.status(202).json({message: 'Atualizamos o evento com Id ' + EditEvent.id})
+        // Verificar se o evento existe e atualizar apenas os campos fornecidos
+        const updatedEvent = await Event.findByIdAndUpdate(
+            eventId,
+            {
+                name: name,
+                description: description,
+                date: date,
+                location: location,
+                organizer: organizer
+             },
+        );
+
+        if (!updatedEvent) {
+            return res.status(404).json({ message: 'Evento não encontrado' });
+        }
+
+        res.status(200).json({ message: `Evento com Id ${updatedEvent._id} atualizado com sucesso`, event: updatedEvent });
 
     } catch (error) {
-        res.status(502).json(error)
+        res.status(500).json({ message: 'Erro ao atualizar o evento', error });
     }
-})
+});
 
 
 
