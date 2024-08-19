@@ -1,92 +1,67 @@
-const express = require("express")
-const cors = require("cors")
-const mongoose = require("mongoose")
-const PORT = 8000
-const app = express()
-const Event = require("./Schema/EventSchema")
+const express = require("express");
+const cors = require("cors");
+const mongoose = require("mongoose");
+const PORT = 8000;
+const app = express();
+const Event = require("./Schema/EventSchema");
 
-app.use(cors())
-app.use(express.json())
+app.use(cors());
+app.use(express.json());
 
+app.get("/", (req, res) => {
+    res.json("Olá mundo");
+});
 
-app.get("/", (req, res) =>{
-    res.json("Ola mundo")
-})
-
-// criando a rota de eventos - POST
-
-
-app.post("/event", async (req, res) =>{
+// Criar evento - POST
+app.post("/event", async (req, res) => {
     try {
-        const {name, description, date, location, organizer} = req.body
-        const event = {
-            name,
-            description,
-            date,
-            location,
-            organizer
-        }
-        const eventCreated = await Event.create(event)
+        const { name, description, date, location, organizer } = req.body;
+        const event = { name, description, date, location, organizer };
+        const eventCreated = await Event.create(event);
         res.status(201).json({ message: "Evento criado com sucesso", event: eventCreated });
-        
     } catch (error) {
-        console.log("erro ao criar evento", error)
-        res.status(500).json({message: "erro ao criar evento", erro: error})
+        console.log("Erro ao criar evento", error);
+        res.status(500).json({ message: "Erro ao criar evento", erro: error });
     }
-})
+});
 
-
-// rota para buscar eventos
-
-app.get('/getEvent', async (req, res) =>{
+// Buscar todos os eventos - GET
+app.get("/getEvent", async (req, res) => {
     try {
-        const result = await Event.find()
-
-        if(!result){
-            res.json({message:'Nenhum evento encontrado'})
+        const result = await Event.find();
+        if (result.length === 0) {
+            return res.status(404).json({ message: 'Nenhum evento encontrado' });
         }
-        // adicionando o status 200 ao entregar os dados
-        res.status(200).json(result)
-        
+        res.status(200).json(result);
     } catch (error) {
-        res.status(500).json({message:'Problemas ao consultar o banco de dados', erro: error})
+        res.status(500).json({ message: 'Problemas ao consultar o banco de dados', erro: error });
     }
-})
+});
 
-
- // criei uma rota para deletar evento usando o id como parametro
-app.delete('/delEvent/:id', async (req, res) =>{
-    // ao pegar o ID, é conveniete que vc pegue diretamente da rota: req.params.id
-    const id = req.params.id
-   try {
-    const eventDeleted = await Event.findOneAndDelete({ id: id})
-    if(!eventDeleted){
-        res.status(404).json({message: 'Evento não encontrado, verifique o id do evento'})
+// Deletar evento - DELETE
+app.delete("/delEvent/:id", async (req, res) => {
+    const id = req.params.id;
+    try {
+        const eventDeleted = await Event.findByIdAndDelete(id);
+        if (!eventDeleted) {
+            return res.status(404).json({ message: 'Evento não encontrado, verifique o id do evento' });
+        }
+        res.status(200).json({ message: 'Evento deletado com sucesso', event: eventDeleted });
+    } catch (error) {
+        res.status(500).json({ message: 'Problemas ao deletar no banco de dados', erro: error });
     }
-    res.status(200).json({message:'Evento deletado com sucesso', event: eventDeleted})
-   } catch (error) {
-    res.status(503).json({message: 'Problemas ao deletar no banco de dados', erro: error})
-   }
-   
-})
+});
 
-// rota para atualizar, precisa ser melhorada, só altera um registro, creio que seja o findOneAndUpdate que estou a usar
-
-app.put('/putEvent/:id', async (req, res) => {
+// Atualizar evento - PUT
+app.put("/putEvent/:id", async (req, res) => {
     const eventId = req.params.id;
     const { name, description, date, location, organizer } = req.body;
 
     try {
-        // Verificar se o evento existe e atualizar apenas os campos fornecidos
         const updatedEvent = await Event.findByIdAndUpdate(
             eventId,
-            {
-                name: name,
-                description: description,
-                date: date,
-                location: location,
-                organizer: organizer
-             },
+            { name, description, date, location, organizer },
+            { new: true, runValidators: true } // Garante que o documento atualizado seja retornado
         );
 
         if (!updatedEvent) {
@@ -94,21 +69,32 @@ app.put('/putEvent/:id', async (req, res) => {
         }
 
         res.status(200).json({ message: `Evento com Id ${updatedEvent._id} atualizado com sucesso`, event: updatedEvent });
-
     } catch (error) {
-        res.status(500).json({ message: 'Erro ao atualizar o evento', error });
+        res.status(500).json({ message: 'Erro ao atualizar o evento', erro: error });
     }
 });
 
+// Buscar evento por ID - GET
+app.get("/getEvent/:id", async (req, res) => {
+    const eventId = req.params.id;
+    try {
+        const eventDetail = await Event.findById(eventId);
+        if (!eventDetail) {
+            return res.status(404).json({ message: "Evento não encontrado" });
+        }
+        res.status(200).json(eventDetail);
+    } catch (error) {
+        console.log("Erro ao pegar um evento", error);
+        res.status(500).json({ message: "Erro ao pegar um evento", erro: error });
+    }
+});
 
-
-
-
-
-mongoose.connect("mongodb+srv://loidpadre:QCjXHMS3nBA5xeGI@bdevents.tixiz.mongodb.net/?retryWrites=true&w=majority&appName=bdEvents").then(() =>{
-    app.listen(PORT, () =>{
-        console.log("API rodando e banco de dados conectado", PORT)
+mongoose.connect("mongodb+srv://loidpadre:QCjXHMS3nBA5xeGI@bdevents.tixiz.mongodb.net/?retryWrites=true&w=majority&appName=bdEvents")
+    .then(() => {
+        app.listen(PORT, () => {
+            console.log("API rodando e banco de dados conectado", PORT);
+        });
     })
-}).catch((error) =>{
-    console.log("erro ao se conectar com a bd", error)
-})
+    .catch((error) => {
+        console.log("Erro ao se conectar com a base de dados", error);
+    });
